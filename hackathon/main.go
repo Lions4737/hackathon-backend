@@ -14,12 +14,11 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 	// 環境変数から DB 情報取得
 	user := os.Getenv("MYSQL_USER")
 	pwd := os.Getenv("MYSQL_PWD")
+	socket := os.Getenv("MYSQL_HOST") // 実際には 'unix(/cloudsql/...)' 形式の値
 	dbname := os.Getenv("MYSQL_DATABASE")
-	connName := os.Getenv("MYSQL_CONNECTION_NAME") // 追加（例: "project:region:instance"）
 
-	// DSNの組み立て（Unixソケット経由）
-	dsn := fmt.Sprintf("%s:%s@unix(/cloudsql/%s)/%s", user, pwd, connName, dbname)
-
+	// DSNの組み立て
+	dsn := fmt.Sprintf("%s:%s@%s/%s", user, pwd, socket, dbname)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		http.Error(w, "DB接続エラー: "+err.Error(), http.StatusInternalServerError)
