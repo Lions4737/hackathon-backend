@@ -1,6 +1,6 @@
 module example.com/hackathon
 
-go 1.24.2
+go 1.20
 
 require github.com/go-sql-driver/mysql v1.9.3
 
