@@ -2,6 +2,7 @@ package firebase
 
 import (
 	"context"
+	"os"
 
 	firebase "firebase.google.com/go/v4"
 	"google.golang.org/api/option"
