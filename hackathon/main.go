@@ -1,29 +1,23 @@
 package main
 
 import (
-	"database/sql"
-	"fmt"
+	"log"
 	"net/http"
-	"os"
+	"github.com/joho/godotenv"
 
-	_ "github.com/go-sql-driver/mysql"
+	"hackathon/routes"
 )
 
-func main() {
-	mysqlUser := os.Getenv("MYSQL_USER")
-	mysqlPwd := os.Getenv("MYSQL_PWD")
-	mysqlHost := os.Getenv("MYSQL_HOST")
-	mysqlDatabase := os.Getenv("MYSQL_DATABASE")
-
-	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s", mysqlUser, mysqlPwd, mysqlHost, mysqlDatabase)
-	db, err := sql.Open("mysql", dsn)
+func init() {
+	err := godotenv.Load()
 	if err != nil {
-		panic(err)
+		log.Println("⚠️ .env ファイルが読み込めませんでした")
 	}
-	defer db.Close()
+}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Connected to DB!")
-	})
-	http.ListenAndServe(":8080", nil)
+func main() {
+	r := routes.SetupRouter()
+
+	log.Println("Server listening on :8080...")
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
