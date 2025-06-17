@@ -3,12 +3,19 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
-
+	"github.com/joho/godotenv"
 	"hackathon/db"
-	"hackathon/model"
+    "hackathon/model"
+
 	"hackathon/routes"
 )
+
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("⚠️ .env ファイルが読み込めませんでした")
+	}
+}
 
 func main() {
 	if err := db.Connect(); err != nil {
@@ -16,26 +23,24 @@ func main() {
 	}
 
 	log.Println("🚀 マイグレーション実行中...")
-	if err := db.GetDB().AutoMigrate(&model.User{}, &model.Post{}, &model.Like{}); err != nil {
-		log.Fatalf("❌ マイグレーション失敗: %v", err)
-	}
-	log.Println("✅ マイグレーション完了")
+    if err := db.GetDB().AutoMigrate(&model.User{}, &model.Post{}, &model.Like{}); err != nil {
+        log.Fatal("❌ マイグレーション失敗:", err)
+    }
+    log.Println("✅ マイグレーション完了")
 
-	// 任意: 存在しない場合のみユーザー作成
-	user := model.User{
-		Username:    "taro",
-		FirebaseUID: "uid123",
-		Description: "テストユーザー",
-	}
-	db.GetDB().FirstOrCreate(&user, model.User{FirebaseUID: "uid123"})
+	// ユーザーを作成
+    user := model.User{
+        Username:    "taro",
+        FirebaseUID: "uid123",
+        Description: "テストユーザー",
+    }
 
-	// Cloud Run対応: 環境変数からPORT取得
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
+	if err := db.GetDB().Create(&user).Error; err != nil {
+        log.Fatal("ユーザー作成失敗: ", err)
+    }
 
 	r := routes.SetupRouter()
-	log.Printf("🚀 Server listening on :%s...\n", port)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+
+	log.Println("Server listening on :8080...")
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
