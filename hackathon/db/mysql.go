@@ -18,7 +18,7 @@ func Connect() error {
 	dbname := os.Getenv("MYSQL_DATABASE")
 
 	//dsn := fmt.Sprintf("%s:%s@%s/%s?charset=utf8mb4&parseTime=True&loc=Asia%%2FTokyo", user, pass, host, dbname)
-	dsn := fmt.Sprintf("%s:%s@%s/%s", user, pwd, socket, dbname)
+	dsn := fmt.Sprintf("%s:%s@%s/%s", user, pass, host, dbname)
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
