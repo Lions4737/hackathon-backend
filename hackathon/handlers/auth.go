@@ -28,7 +28,17 @@ func SessionLoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = auth.VerifyIDToken(context.Background(), idToken)
+	auth, err := firebase.GetAuthClient()
+	if err != nil {
+		http.Error(w, "Firebase init error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	start := time.Now()
+	token, err := auth.VerifyIDToken(r.Context(), idToken)
+	duration := time.Since(start)
+	fmt.Printf("⏱ VerifyIDToken took: %v\n", duration)
+
 	if err != nil {
 		http.Error(w, "Invalid token: "+err.Error(), http.StatusUnauthorized)
 		return
