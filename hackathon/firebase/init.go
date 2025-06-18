@@ -3,13 +3,28 @@ package firebase
 import (
 	"context"
 	"os"
+	"sync"
 
 	firebase "firebase.google.com/go/v4"
 	"google.golang.org/api/option"
+	"firebase.google.com/go/v4/auth"
 )
 
-func InitFirebaseApp() (*firebase.App, error) {
-	ctx := context.Background()
-	opt := option.WithCredentialsFile(os.Getenv("FIREBASE_CREDENTIALS_PATH"))
-	return firebase.NewApp(ctx, nil, opt)
+func InitFirebase() {
+	once.Do(func() {
+		ctx := context.Background()
+		opt := option.WithCredentialsFile(os.Getenv("FIREBASE_CREDENTIALS_PATH"))
+		app, errInit = firebase.NewApp(ctx, nil, opt)
+		if errInit != nil {
+			return
+		}
+		authCli, errInit = app.Auth(ctx)
+	})
+}
+
+func GetAuthClient() (*auth.Client, error) {
+	if authCli == nil {
+		InitFirebase()
+	}
+	return authCli, errInit
 }
