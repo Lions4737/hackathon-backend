@@ -10,6 +10,13 @@ import (
 	"firebase.google.com/go/v4/auth"
 )
 
+var (
+	app     *firebase.App
+	authCli *auth.Client
+	once    sync.Once
+	errInit error
+)
+
 func InitFirebase() {
 	once.Do(func() {
 		ctx := context.Background()

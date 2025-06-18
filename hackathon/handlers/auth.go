@@ -17,28 +17,14 @@ func SessionLoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app, err := firebase.InitFirebaseApp()
-	if err != nil {
-		http.Error(w, "Firebase init error: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	auth, err := app.Auth(context.Background())
-	if err != nil {
-		http.Error(w, "Auth error: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	auth, err := firebase.GetAuthClient()
+	authClient, err := firebase.GetAuthClient()
 	if err != nil {
 		http.Error(w, "Firebase init error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	start := time.Now()
-	token, err := auth.VerifyIDToken(r.Context(), idToken)
-	duration := time.Since(start)
-	fmt.Printf("⏱ VerifyIDToken took: %v\n", duration)
-
+	// Verify ID token
+	_, err = authClient.VerifyIDToken(context.Background(), idToken)
 	if err != nil {
 		http.Error(w, "Invalid token: "+err.Error(), http.StatusUnauthorized)
 		return
@@ -55,6 +41,7 @@ func SessionLoginHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, "Login successful")
 }
+
 
 func SessionLogoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
