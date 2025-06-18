@@ -29,17 +29,6 @@ func main() {
 	}
 	log.Println("✅ マイグレーション完了")
 
-	// ユーザーを作成
-	user := model.User{
-		Username:    "taro",
-		FirebaseUID: "uid123",
-		Description: "テストユーザー",
-	}
-
-	if err := db.GetDB().Create(&user).Error; err != nil {
-		log.Fatal("ユーザー作成失敗: ", err)
-	}
-
 	r := routes.SetupRouter()
 
 	// ✅ Cloud Run 互換：PORT 環境変数を利用
