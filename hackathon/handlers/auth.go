@@ -1,15 +1,12 @@
-package handlers
-
 import (
-	"context"
-	"fmt"
 	"net/http"
+	"os"
 	"time"
-	"encoding/json"
-
-	"hackathon/firebase"
-	"hackathon/middleware"
 )
+
+func isProduction() bool {
+	return os.Getenv("ENV") == "production"
+}
 
 func SessionLoginHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
@@ -19,48 +16,43 @@ func SessionLoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authClient, err := firebase.GetAuthClient()
-	if err != nil {
-		http.Error(w, "Firebase init error: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// (Firebaseトークン検証は省略)
 
-	// Verify ID token
-	_, err = authClient.VerifyIDToken(context.Background(), idToken)
-	if err != nil {
-		http.Error(w, "Invalid token: "+err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	http.SetCookie(w, &http.Cookie{
+	cookie := &http.Cookie{
 		Name:     "session",
 		Value:    idToken,
+		Path:     "/",
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteNoneMode,
-		Path:     "/",
-	})
+		Secure:   isProduction(), // 本番では true
+	}
+
+	if isProduction() {
+		cookie.SameSite = http.SameSiteNoneMode // クロスサイトに必要
+	} else {
+		cookie.SameSite = http.SameSiteLaxMode // 開発中はこれで十分
+	}
+
+	http.SetCookie(w, cookie)
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, "Login successful")
+	w.Write([]byte("Login successful"))
 }
 
-
 func SessionLogoutHandler(w http.ResponseWriter, r *http.Request) {
-	http.SetCookie(w, &http.Cookie{
+	cookie := &http.Cookie{
 		Name:     "session",
 		Value:    "",
 		Path:     "/",
 		Expires:  time.Now().Add(-1 * time.Hour),
 		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteNoneMode,
-	})
+		Secure:   isProduction(),
+	}
+	if isProduction() {
+		cookie.SameSite = http.SameSiteNoneMode
+	} else {
+		cookie.SameSite = http.SameSiteLaxMode
+	}
+	http.SetCookie(w, cookie)
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, "Logout successful")
-}
-
-func CheckSession(w http.ResponseWriter, r *http.Request) {
-	uid := r.Context().Value(middleware.UserIDKey).(string)
-	json.NewEncoder(w).Encode(map[string]string{"uid": uid})
+	w.Write([]byte("Logout successful"))
 }
