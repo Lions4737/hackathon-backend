@@ -1,58 +1,79 @@
+package handlers
+
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
+
+	"hackathon/firebase"
+	"hackathon/middleware"
 )
 
 func isProduction() bool {
 	return os.Getenv("ENV") == "production"
 }
 
+func newSessionCookie(value string, expiry time.Time) *http.Cookie {
+	cookie := &http.Cookie{
+		Name:     "session",
+		Value:    value,
+		Path:     "/",
+		Expires:  expiry,
+		HttpOnly: true,
+		Secure:   isProduction(), // 本番では https 用に true
+	}
+	if isProduction() {
+		cookie.SameSite = http.SameSiteNoneMode // クロスドメインには必須
+	} else {
+		cookie.SameSite = http.SameSiteLaxMode // 開発環境では Lax が適切
+	}
+	return cookie
+}
+
 func SessionLoginHandler(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Failed to parse form", http.StatusBadRequest)
+		return
+	}
+
 	idToken := r.FormValue("idToken")
 	if idToken == "" {
 		http.Error(w, "ID token is required", http.StatusBadRequest)
 		return
 	}
 
-	// (Firebaseトークン検証は省略)
-
-	cookie := &http.Cookie{
-		Name:     "session",
-		Value:    idToken,
-		Path:     "/",
-		Expires:  time.Now().Add(24 * time.Hour),
-		HttpOnly: true,
-		Secure:   isProduction(), // 本番では true
+	authClient, err := firebase.GetAuthClient()
+	if err != nil {
+		http.Error(w, "Firebase init error: "+err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	if isProduction() {
-		cookie.SameSite = http.SameSiteNoneMode // クロスサイトに必要
-	} else {
-		cookie.SameSite = http.SameSiteLaxMode // 開発中はこれで十分
+	// Verify the ID token
+	_, err = authClient.VerifyIDToken(context.Background(), idToken)
+	if err != nil {
+		http.Error(w, "Invalid token: "+err.Error(), http.StatusUnauthorized)
+		return
 	}
 
-	http.SetCookie(w, cookie)
+	// Set session cookie
+	http.SetCookie(w, newSessionCookie(idToken, time.Now().Add(24*time.Hour)))
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Login successful"))
+	fmt.Fprint(w, "Login successful")
 }
 
 func SessionLogoutHandler(w http.ResponseWriter, r *http.Request) {
-	cookie := &http.Cookie{
-		Name:     "session",
-		Value:    "",
-		Path:     "/",
-		Expires:  time.Now().Add(-1 * time.Hour),
-		HttpOnly: true,
-		Secure:   isProduction(),
-	}
-	if isProduction() {
-		cookie.SameSite = http.SameSiteNoneMode
-	} else {
-		cookie.SameSite = http.SameSiteLaxMode
-	}
-	http.SetCookie(w, cookie)
+	// Expire the session cookie
+	http.SetCookie(w, newSessionCookie("", time.Now().Add(-1*time.Hour)))
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Logout successful"))
+	fmt.Fprint(w, "Logout successful")
+}
+
+func CheckSession(w http.ResponseWriter, r *http.Request) {
+	uid := r.Context().Value(middleware.UserIDKey).(string)
+	json.NewEncoder(w).Encode(map[string]string{"uid": uid})
 }
