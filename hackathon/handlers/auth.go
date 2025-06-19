@@ -38,6 +38,7 @@ func SessionLoginHandler(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
 		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
 		Path:     "/",
 	})
 	w.WriteHeader(http.StatusOK)
@@ -52,6 +53,8 @@ func SessionLogoutHandler(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		Expires:  time.Now().Add(-1 * time.Hour),
 		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
 	})
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, "Logout successful")
