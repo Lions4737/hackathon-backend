@@ -37,7 +37,7 @@ func SessionLoginHandler(w http.ResponseWriter, r *http.Request) {
 		Value:    idToken,
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   true,
 		Path:     "/",
 	})
 	w.WriteHeader(http.StatusOK)
