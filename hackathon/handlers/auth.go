@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+	"encoding/json"
 
 	"hackathon/firebase"
+	"hackathon/middleware"
 )
 
 func SessionLoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -53,4 +55,9 @@ func SessionLogoutHandler(w http.ResponseWriter, r *http.Request) {
 	})
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, "Logout successful")
+}
+
+func CheckSession(w http.ResponseWriter, r *http.Request) {
+	uid := r.Context().Value(middleware.UserIDKey).(string)
+	json.NewEncoder(w).Encode(map[string]string{"uid": uid})
 }
