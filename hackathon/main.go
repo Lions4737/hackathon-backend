@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/gorilla/mux" //
 	"github.com/joho/godotenv"
 	"hackathon/db"
 	"hackathon/model"
@@ -30,6 +31,14 @@ func main() {
 	log.Println("✅ マイグレーション完了")
 
 	r := routes.SetupRouter()
+
+	r.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+	path, _ := route.GetPathTemplate()
+	methods, _ := route.GetMethods()
+	log.Printf("📌 Route: %s %v\n", path, methods)
+	return nil
+})
+
 
 	// ✅ Cloud Run 互換：PORT 環境変数を利用
 	port := os.Getenv("PORT")
