@@ -14,7 +14,7 @@ func SetupRouter() *mux.Router {
 	r.HandleFunc("/api/sessionLogout", middleware.WithCORS(handlers.SessionLogoutHandler)).Methods("OPTIONS", "POST")
 	r.HandleFunc("/api/checkSession", middleware.WithCORS(middleware.RequireAuth(handlers.CheckSession))).Methods("OPTIONS", "GET")
 	r.HandleFunc("/api/registerUser", middleware.WithCORS(handlers.RegisterUserHandler)).Methods("OPTIONS", "POST")
-
+	r.HandleFunc("/api/posts", middleware.WithCORS(middleware.RequireAuth(handlers.CreatePostHandler))).Methods("OPTIONS", "POST", "GET")
 
 
 	return r
