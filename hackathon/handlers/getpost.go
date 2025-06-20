@@ -1,0 +1,70 @@
+package handlers
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"hackathon/db"
+	"hackathon/middleware"
+	"hackathon/model"
+)
+
+// GET /api/posts
+func GetAllPostsHandler(w http.ResponseWriter, r *http.Request) {
+	uidVal := r.Context().Value(middleware.UserIDKey)
+	uid, ok := uidVal.(string)
+	if !ok || uid == "" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	database := db.GetDB()
+
+	var user model.User
+	if err := database.Where("firebase_uid = ?", uid).First(&user).Error; err != nil {
+		http.Error(w, "user not found", http.StatusNotFound)
+		return
+	}
+
+	var posts []model.Post
+	if err := database.Preload("User").
+		Where("user_id != ?", user.ID).
+		Order("created_at DESC").
+		Find(&posts).Error; err != nil {
+		http.Error(w, "failed to fetch posts", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(posts)
+}
+
+// GET /api/posts/mine
+func GetMyPostsHandler(w http.ResponseWriter, r *http.Request) {
+	uidVal := r.Context().Value(middleware.UserIDKey)
+	uid, ok := uidVal.(string)
+	if !ok || uid == "" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	database := db.GetDB()
+
+	var user model.User
+	if err := database.Where("firebase_uid = ?", uid).First(&user).Error; err != nil {
+		http.Error(w, "user not found", http.StatusNotFound)
+		return
+	}
+
+	var posts []model.Post
+	if err := database.Preload("User").
+		Where("user_id = ?", user.ID).
+		Order("created_at DESC").
+		Find(&posts).Error; err != nil {
+		http.Error(w, "failed to fetch posts", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(posts)
+}
