@@ -31,5 +31,10 @@ func SetupRouter() *mux.Router {
 	r.HandleFunc("/api/posts/{id:[0-9]+}/unlike", middleware.WithCORS(middleware.RequireAuth(handlers.UnlikePost))).Methods("OPTIONS", "DELETE")
 	r.HandleFunc("/api/my-likes", middleware.WithCORS(middleware.RequireAuth(handlers.GetMyLikes))).Methods("OPTIONS", "GET")
 
+	// プロフィール関連のルート
+	r.HandleFunc("/api/profile", middleware.WithCORS(middleware.RequireAuth(handlers.GetProfileHandler))).Methods("GET", "OPTIONS")
+	r.HandleFunc("/api/profile", middleware.WithCORS(middleware.RequireAuth(handlers.UpdateProfileHandler))).Methods("POST", "OPTIONS")
+
+
 	return r
 }
