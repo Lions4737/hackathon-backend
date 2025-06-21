@@ -22,8 +22,6 @@ func SetupRouter() *mux.Router {
 	r.HandleFunc("/api/posts/{id:[0-9]+}/replies", middleware.WithCORS(middleware.RequireAuth(handlers.GetRepliesByPostID))).Methods("OPTIONS", "GET")
 	r.HandleFunc("/api/posts/{id}/factcheck", middleware.WithCORS(handlers.FactCheckHandler)).Methods("OPTIONS", "GET")
 
-
-
 	// db関連のルート
 	r.HandleFunc("/api/registerUser", middleware.WithCORS(handlers.RegisterUserHandler)).Methods("OPTIONS", "POST")
 	r.HandleFunc("/api/me", middleware.WithCORS(middleware.RequireAuth(handlers.GetCurrentUser))).Methods("GET", "OPTIONS")
