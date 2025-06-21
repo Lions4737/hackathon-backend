@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
-	"log"
+
+	"gorm.io/gorm"
 
 	"hackathon/db"
 	"hackathon/middleware"
@@ -12,7 +14,8 @@ import (
 )
 
 type CreatePostRequest struct {
-	Content string `json:"content"`
+	Content      string `json:"content"`
+	ParentPostID *uint  `json:"parent_post_id,omitempty"` // 🔥 リプライ対応
 }
 
 func CreatePostHandler(w http.ResponseWriter, r *http.Request) {
@@ -32,14 +35,31 @@ func CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	post := model.Post{
-		UserID:    user.ID,
-		Content:   req.Content,
-		IsReply:   false,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		UserID:       user.ID,
+		Content:      req.Content,
+		IsReply:      req.ParentPostID != nil,
+		ParentPostID: req.ParentPostID,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
 	}
 
-	if err := db.GetDB().Create(&post).Error; err != nil {
+	// 💡 トランザクションで作成＋カウント更新
+	err := db.GetDB().Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&post).Error; err != nil {
+			return err
+		}
+		// 🔁 親ポストがある場合、reply_count を +1
+		if req.ParentPostID != nil {
+			if err := tx.Model(&model.Post{}).
+				Where("id = ?", *req.ParentPostID).
+				Update("reply_count", gorm.Expr("reply_count + 1")).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
 		http.Error(w, "Failed to create post", http.StatusInternalServerError)
 		return
 	}
