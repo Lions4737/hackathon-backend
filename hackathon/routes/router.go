@@ -21,6 +21,12 @@ func SetupRouter() *mux.Router {
 	r.HandleFunc("/api/posts/{id:[0-9]+}", middleware.WithCORS(middleware.RequireAuth(handlers.GetPostByID))).Methods("OPTIONS", "GET")
 	r.HandleFunc("/api/posts/{id:[0-9]+}/replies", middleware.WithCORS(middleware.RequireAuth(handlers.GetRepliesByPostID))).Methods("OPTIONS", "GET")
 	r.HandleFunc("/api/posts/{id}/factcheck", middleware.WithCORS(handlers.FactCheckHandler)).Methods("OPTIONS", "GET")
+	
+	// ユーザーIDを指定した投稿取得エンドポイント
+	r.HandleFunc("/api/users/{id:[0-9]+}/posts", middleware.WithCORS(middleware.RequireAuth(handlers.GetPostsByUserIDHandler))).Methods("OPTIONS", "GET")
+	// プロフィール取得（ユーザーID指定）
+	r.HandleFunc("/api/users/{id:[0-9]+}", middleware.WithCORS(middleware.RequireAuth(handlers.GetUserProfileByID))).Methods("OPTIONS", "GET")
+
 
 	// db関連のルート
 	r.HandleFunc("/api/registerUser", middleware.WithCORS(handlers.RegisterUserHandler)).Methods("OPTIONS", "POST")
